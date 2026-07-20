@@ -60,6 +60,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository }}
           tags: |
+            type=raw,value=${{ matrix.service }}-${{ github.sha }}
             type=raw,value=${{ matrix.service }}-latest
 
       - name: Build and Push Docker image
