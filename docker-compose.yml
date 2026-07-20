@@ -1,0 +1,45 @@
+services:
+  nginx:
+    image: ${BASE_REGISTRY}:nginx-latest
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+    networks:
+      - web-network
+      - logging-network
+    restart: unless-stopped
+    depends_on:
+      - go-app
+      - nodejs-app
+      - python-app
+
+  python-app:
+    image: ${BASE_REGISTRY}:python-latest
+    container_name: python-app
+    expose:
+      - "8080"
+    networks:
+      - web-network
+    restart: unless-stopped
+
+  nodejs-app:
+    image: ${BASE_REGISTRY}:nodejs-latest
+    container_name: nodejs-app
+    expose:
+      - "8080"
+    networks:
+      - web-network
+    restart: unless-stopped
+
+  go-app:
+    image: ${BASE_REGISTRY}:go-latest
+    container_name: go-app
+    expose:
+      - "8080"
+    networks:
+      - web-network
+    restart: unless-stopped
+
+networks:
+  web-network:
+    driver: bridge

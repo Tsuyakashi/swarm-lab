@@ -8,6 +8,7 @@ on:
       - 'python/**'
       - 'go/**'
       - 'nodejs/**'
+      - 'nginx/**'
 
 env:
   REGISTRY: ghcr.io
@@ -28,6 +29,7 @@ jobs:
             python: 'python/**'
             go: 'go/**'
             nodejs: 'nodejs/**'
+            nginx: 'nginx/**'
 
   build:
     needs: detect-changes
