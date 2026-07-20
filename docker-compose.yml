@@ -6,7 +6,6 @@ services:
       - "80:80"
     networks:
       - web-network
-      - logging-network
     restart: unless-stopped
     depends_on:
       - go-app
@@ -42,4 +41,4 @@ services:
 
 networks:
   web-network:
-    driver: bridge
+    driver: overlay

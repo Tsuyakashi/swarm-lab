@@ -46,10 +46,17 @@ Vagrant.configure("2") do |config|
             end
 
             if name == "manager-node"
+                node.vm.provision "file",
+                    source: "docker-compose.yml",
+                    destination: "/tmp/docker-compose.yml"
+
                 node.vm.provision "configure_manager", type: "shell" do |s|
                     s.path = "scripts/manager.sh"
                     s.binary = true
-                    s.env = { "MANAGER_IP" => cfg[:ip] }
+                    s.env = { 
+                        "MANAGER_IP" => cfg[:ip],
+                        "BASE_REGISTRY" => ENV['BASE_REGISTRY']
+                    }
                 end
             end
 
