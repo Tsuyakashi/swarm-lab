@@ -17,6 +17,7 @@ APP_DIR="/tmp"
 cd "$APP_DIR" || exit 1
 
 echo "Pulling images"
+[ -z "$BASE_REGISTRY" ] && echo "WARN: BASE_REGISTRY not set"
 sudo -E docker compose pull &>/dev/null
 
 echo "Deploying stack"
