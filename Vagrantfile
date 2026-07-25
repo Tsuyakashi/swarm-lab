@@ -79,13 +79,13 @@ Vagrant.configure("2") do |config|
                 sleep 5
             end
             raise "manager swarm not ready after timeout" if token.nil?
-
+    
             NODES.each do |name, _cfg|
                 next if name == "manager-node"
                 state = `vagrant status #{name} --machine-readable`.lines.grep(/,state,/).last
                 next unless state&.include?(",running")
                 puts "== joining #{name} to swarm =="
-                system("vagrant ssh #{name} -c \"...\"")
+                system("vagrant ssh #{name} -c \"sudo docker info 2>/dev/null | grep -q 'Swarm: active' || sudo docker swarm join --token #{token} #{MANAGER_IP}:2377\"")
             end
         end
     end
