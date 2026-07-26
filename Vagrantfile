@@ -69,6 +69,8 @@ Vagrant.configure("2") do |config|
 
     config.trigger.after :up do |trigger|
         trigger.ruby do |env, machine|
+            next unless machine.name.to_s == NODES.keys.last  # выполняем один раз, после последней ноды
+    
             token = nil
             30.times do
                 out = `vagrant ssh manager-node -c "sudo docker info 2>/dev/null | grep -q 'Swarm: active' && sudo docker swarm join-token -q worker" 2>/dev/null`.strip
@@ -87,6 +89,9 @@ Vagrant.configure("2") do |config|
                 puts "== joining #{name} to swarm =="
                 system("vagrant ssh #{name} -c \"sudo docker info 2>/dev/null | grep -q 'Swarm: active' || sudo docker swarm join --token #{token} #{MANAGER_IP}:2377\"")
             end
+    
+            puts "== deploying stack =="
+            system("vagrant ssh manager-node -c \"export BASE_REGISTRY=#{ENV['BASE_REGISTRY']}; sudo -E docker stack deploy --with-registry-auth -c /tmp/docker-compose.yml stage\"")
         end
     end
 end
