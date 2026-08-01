@@ -1,4 +1,4 @@
-name: Build apps
+name: Build stage apps
 
 on:
   pull_request:
