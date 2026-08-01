@@ -14,7 +14,7 @@ services:
     deploy:
       placement:
         constraints:
-          - "node.labels.TAG=stage"
+          - "node.labels.TAG==stage"
 
   python-app:
     image: ${BASE_REGISTRY}:python-stage
@@ -27,7 +27,7 @@ services:
     deploy:
       placement:
         constraints:
-          - "node.labels.TAG=stage"
+          - "node.labels.TAG==stage"
 
   nodejs-app:
     image: ${BASE_REGISTRY}:nodejs-stage
@@ -40,7 +40,7 @@ services:
     deploy:
       placement:
         constraints:
-          - "node.labels.TAG=stage"
+          - "node.labels.TAG==stage"
 
   go-app:
     image: ${BASE_REGISTRY}:go-stage
@@ -53,7 +53,7 @@ services:
     deploy:
       placement:
         constraints:
-          - "node.labels.TAG=stage"
+          - "node.labels.TAG==stage"
 
 networks:
   web-network:

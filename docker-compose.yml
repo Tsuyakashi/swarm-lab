@@ -14,7 +14,7 @@ services:
     deploy:
       placement:
         constraints:
-          - "node.labels.TAG=prod"
+          - "node.labels.TAG==prod"
 
   python-app:
     image: ${BASE_REGISTRY}:python-latest
@@ -27,7 +27,7 @@ services:
     deploy:
       placement:
         constraints:
-          - "node.labels.TAG=prod"
+          - "node.labels.TAG==prod"
 
   nodejs-app:
     image: ${BASE_REGISTRY}:nodejs-latest
@@ -40,7 +40,7 @@ services:
     deploy:
       placement:
         constraints:
-          - "node.labels.TAG=prod"
+          - "node.labels.TAG==prod"
 
   go-app:
     image: ${BASE_REGISTRY}:go-latest
@@ -53,7 +53,7 @@ services:
     deploy:
       placement:
         constraints:
-          - "node.labels.TAG=prod"
+          - "node.labels.TAG==prod"
 
 networks:
   web-network:
