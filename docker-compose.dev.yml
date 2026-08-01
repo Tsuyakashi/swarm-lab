@@ -1,9 +1,9 @@
 services:
   nginx:
-    image: ${BASE_REGISTRY}:nginx-latest
+    image: ${BASE_REGISTRY}:nginx-dev
     container_name: nginx-proxy
     ports:
-      - "80:80"
+      - "8081:80"
     networks:
       - web-network
     restart: unless-stopped
@@ -14,10 +14,10 @@ services:
     deploy:
       placement:
         constraints:
-          - "node.labels.TAG=prod"
+          - "node.labels.TAG=dev"
 
   python-app:
-    image: ${BASE_REGISTRY}:python-latest
+    image: ${BASE_REGISTRY}:python-dev
     container_name: python-app
     expose:
       - "8080"
@@ -27,10 +27,10 @@ services:
     deploy:
       placement:
         constraints:
-          - "node.labels.TAG=prod"
+          - "node.labels.TAG=dev"
 
   nodejs-app:
-    image: ${BASE_REGISTRY}:nodejs-latest
+    image: ${BASE_REGISTRY}:nodejs-dev
     container_name: nodejs-app
     expose:
       - "8080"
@@ -40,10 +40,10 @@ services:
     deploy:
       placement:
         constraints:
-          - "node.labels.TAG=prod"
+          - "node.labels.TAG=dev"
 
   go-app:
-    image: ${BASE_REGISTRY}:go-latest
+    image: ${BASE_REGISTRY}:go-dev
     container_name: go-app
     expose:
       - "8080"
@@ -53,7 +53,7 @@ services:
     deploy:
       placement:
         constraints:
-          - "node.labels.TAG=prod"
+          - "node.labels.TAG=dev"
 
 networks:
   web-network:

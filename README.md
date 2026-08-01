@@ -18,30 +18,37 @@ stack deployed automatically via `vagrant up`.
 - **manager-node** — swarm leader, runs `nginx` (reverse proxy, entrypoint on :80) and `python-app`
 - **worker-node** — runs `nodejs-app` and `go-app`
 - Services communicate over a Swarm overlay network (`web-network`); nginx proxies
-  `/go/`, `/nodejs/`, `/python/` to the respective backend
+`/go/`, `/nodejs/`, `/python/` to the respective backend
+
+
 
 ## Stack
 
-| Component | Purpose |
-|---|---|
+
+| Component                    | Purpose                                             |
+| ---------------------------- | --------------------------------------------------- |
 | Vagrant + libvirt/VirtualBox | VM provisioning (auto-selects provider per host OS) |
-| Docker Swarm | Orchestration, rolling updates |
-| GitHub Actions | Per-service builds on change, push to GHCR |
-| nginx | Reverse proxy / entrypoint |
-| Go / Node.js / Python | Toy backend services with `/health` endpoints |
+| Docker Swarm                 | Orchestration, rolling updates                      |
+| GitHub Actions               | Per-service builds on change, push to GHCR          |
+| nginx                        | Reverse proxy / entrypoint                          |
+| Go / Node.js / Python        | Toy backend services with `/health` endpoints       |
+
+
+
 
 ## Quickstart
 
 ```bash
-cp .env.exmaple .env   # set BASE_REGISTRY
+cp .env.example .env   # set BASE_REGISTRY
 vagrant up
 ```
 
 This will:
+
 1. Boot `manager-node` and `worker-node`
 2. Install Docker on both
 3. Init the swarm on the manager, join the worker automatically (via a Vagrant trigger
-   that polls for the join token)
+  that polls for the join token)
 4. Pull images from `BASE_REGISTRY` and deploy the stack (`docker stack deploy`)
 
 Check cluster state:
@@ -58,6 +65,8 @@ curl 192.168.56.11/go/health
 curl 192.168.56.11/nodejs/health
 curl 192.168.56.11/python/health
 ```
+
+
 
 ## CI/CD
 

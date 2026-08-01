@@ -10,12 +10,12 @@ end
 ENV['VAGRANT_SERVER_URL'] = 'https://vagrant.elab.pro'
 
 NODES = {
-    "manager-node" => { hostname: "manager", ip: "192.168.56.10", memory: 1024, cpus: 1 },
-    "worker1-node" => { hostname: "worker1", ip: "192.168.56.11", memory: 1024, cpus: 1 },
-    "worker2-node" => { hostname: "worker2", ip: "192.168.56.12", memory: 1024, cpus: 1 }
+    "prod-node" => { hostname: "prod", ip: "192.168.56.10", memory: 1024, cpus: 1 },
+    "stage-node" => { hostname: "stage", ip: "192.168.56.11", memory: 1024, cpus: 1 },
+    "dev-node" => { hostname: "dev", ip: "192.168.56.12", memory: 1024, cpus: 1 }
 }
 
-MANAGER_IP = NODES["manager-node"][:ip]
+PROD_IP = NODES["prod-node"][:ip]
 
 Vagrant.configure("2") do |config|
     
@@ -46,14 +46,16 @@ Vagrant.configure("2") do |config|
                 vb.linked_clone = true
             end
 
-            if name == "manager-node"
+            if name == "prod-node"
                 node.vm.provision "file", source: "docker-compose.yml", destination: "/tmp/docker-compose.yml"
+                node.vm.provision "file", source: "docker-compose.stage.yml", destination: "/tmp/docker-compose.stage.yml"
+                node.vm.provision "file", source: "docker-compose.dev.yml", destination: "/tmp/docker-compose.dev.yml"
 
-                node.vm.provision "configure_manager", type: "shell" do |s|
+                node.vm.provision "configure_prod", type: "shell" do |s|
                     s.path = "scripts/manager.sh"
                     s.binary = true
                     s.env = {
-                        "MANAGER_IP" => MANAGER_IP,
+                        "PROD_IP" => PROD_IP,
                         "BASE_REGISTRY" => ENV['BASE_REGISTRY']
                     }
                 end
@@ -73,25 +75,30 @@ Vagrant.configure("2") do |config|
     
             token = nil
             30.times do
-                out = `vagrant ssh manager-node -c "sudo docker info 2>/dev/null | grep -q 'Swarm: active' && sudo docker swarm join-token -q worker" 2>/dev/null`.strip
+                out = `vagrant ssh prod-node -c "sudo docker info 2>/dev/null | grep -q 'Swarm: active' && sudo docker swarm join-token -q worker" 2>/dev/null`.strip
                 unless out.empty?
                     token = out
                     break
                 end
                 sleep 5
             end
-            raise "manager swarm not ready after timeout" if token.nil?
+            raise "prod swarm not ready after timeout" if token.nil?
     
             NODES.each do |name, _cfg|
-                next if name == "manager-node"
+                next if name == "prod-node"
                 state = `vagrant status #{name} --machine-readable`.lines.grep(/,state,/).last
                 next unless state&.include?(",running")
                 puts "== joining #{name} to swarm =="
-                system("vagrant ssh #{name} -c \"sudo docker info 2>/dev/null | grep -q 'Swarm: active' || sudo docker swarm join --token #{token} #{MANAGER_IP}:2377\"")
+                system("vagrant ssh #{name} -c \"sudo docker info 2>/dev/null | grep -q 'Swarm: active' || sudo docker swarm join --token #{token} #{PROD_IP}:2377\"")
             end
     
             puts "== deploying stack =="
-            system("vagrant ssh manager-node -c \"export BASE_REGISTRY=#{ENV['BASE_REGISTRY']}; sudo -E docker stack deploy --with-registry-auth -c /tmp/docker-compose.yml stage\"")
+            system("vagrant ssh prod-node -c \"sudo docker node update --label-add TAG=prod prod\"")
+            system("vagrant ssh prod-node -c \"sudo docker node update --label-add TAG=stage stage\"")
+            system("vagrant ssh prod-node -c \"sudo docker node update --label-add TAG=dev dev\"")
+            system("vagrant ssh prod-node -c \"export BASE_REGISTRY=#{ENV['BASE_REGISTRY']}; sudo -E docker stack deploy --with-registry-auth -c /tmp/docker-compose.yml prod\"")
+            system("vagrant ssh prod-node -c \"export BASE_REGISTRY=#{ENV['BASE_REGISTRY']}; sudo -E docker stack deploy --with-registry-auth -c /tmp/docker-compose.stage.yml stage\"")
+            system("vagrant ssh prod-node -c \"export BASE_REGISTRY=#{ENV['BASE_REGISTRY']}; sudo -E docker stack deploy --with-registry-auth -c /tmp/docker-compose.dev.yml dev\"")
         end
     end
 end
