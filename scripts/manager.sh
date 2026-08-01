@@ -11,7 +11,7 @@ fi
 sudo usermod -aG docker vagrant
 
 sudo docker info 2>/dev/null | grep -q "Swarm: active" \
-    || sudo docker swarm init --advertise-addr "${MANAGER_IP}" >/dev/null
+    || sudo docker swarm init --advertise-addr "${PROD_IP}" >/dev/null
 
 APP_DIR="/tmp"
 cd "$APP_DIR" || exit 1
