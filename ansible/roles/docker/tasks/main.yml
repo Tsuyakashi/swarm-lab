@@ -1,0 +1,18 @@
+# ansible/roles/docker/tasks/main.yml
+---
+- name: Install docker.io and compose plugin
+  apt:
+    name: [docker.io, docker-compose-v2]
+    update_cache: true
+    state: present
+
+- name: Install Docker SDK for Python and jsondiff
+  apt:
+    name: [python3-docker, python3-jsondiff]
+    state: present
+
+- name: Add vagrant user to docker group
+  user:
+    name: vagrant
+    groups: docker
+    append: true
