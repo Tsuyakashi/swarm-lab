@@ -1,4 +1,10 @@
 ---
+- name: Load GitHub runner secrets from environment
+  set_fact:
+    github_repo: "{{ lookup('env', 'GITHUB_REPO') }}"
+    github_pat: "{{ lookup('env', 'GITHUB_PAT') }}"
+  no_log: true
+
 - name: Check if runner already configured
   stat:
     path: /home/vagrant/actions-runner/.runner
@@ -38,6 +44,7 @@
     status_code: 201
     return_content: true
   register: reg_token_response
+  no_log: true
   when: not runner_configured.stat.exists
 
 - name: Configure runner
@@ -50,6 +57,7 @@
     --unattended --replace
   args:
     chdir: /home/vagrant/actions-runner
+  no_log: true
   when: not runner_configured.stat.exists
 
 - name: Install runner service
