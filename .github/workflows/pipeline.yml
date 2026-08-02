@@ -79,14 +79,15 @@ jobs:
 
       - uses: docker/setup-buildx-action@v3
 
-      - name: Build and push (sha tag only)
+      - name: Build and push (sha + floating dev tag)
         uses: docker/build-push-action@v5
         with:
-          context: ./${{ matrix.service }}
+          context: ./${{ matrix.service }}  
           file: ./${{ matrix.service }}/Dockerfile
           push: true
-          tags: ${{ needs.detect-changes.outputs.image_base }}:${{ matrix.service }}-${{ needs.detect-changes.outputs.sha }}
-
+          tags: |
+            ${{ needs.detect-changes.outputs.image_base }}:${{ matrix.service }}-${{ needs.detect-changes.outputs.sha }}
+            ${{ needs.detect-changes.outputs.image_base }}:${{ matrix.service }}-${{ needs.detect-changes.outputs.tag }}
   promote:
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.promote_only == 'true' && needs.detect-changes.outputs.services != '[]' }}
