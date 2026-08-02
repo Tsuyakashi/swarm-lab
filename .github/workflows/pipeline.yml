@@ -125,7 +125,10 @@ jobs:
       - name: Force rolling update
         run: |
           sudo docker service ls --filter label=com.docker.stack.namespace=${{ needs.detect-changes.outputs.stack }} --format '{{.Name}}' \
-            | xargs -r -I{} sudo docker service update --force --with-registry-auth {}
+            | while read -r svc; do
+                current_image=$(sudo docker service inspect "$svc" --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}' | cut -d@ -f1)
+                sudo docker service update --with-registry-auth --image "$current_image" "$svc"
+              done
 
   verify:
     needs: [detect-changes, deploy]
