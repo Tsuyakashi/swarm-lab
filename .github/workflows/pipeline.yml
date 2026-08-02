@@ -128,6 +128,7 @@ jobs:
 
   verify:
     needs: [detect-changes, deploy]
+    if: ${{ !failure() && !cancelled() }}
     runs-on: self-hosted
     steps:
       - name: Wait for services to converge
