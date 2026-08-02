@@ -63,24 +63,26 @@
   become: true
   vars:
     stacks:
-      - { name: prod,  compose: docker-compose.yml }
-      - { name: stage, compose: docker-compose.stage.yml }
-      - { name: dev,   compose: docker-compose.dev.yml }
+      - { name: prod,  img_tag: latest, host_port: 80,   node_tag: prod }
+      - { name: stage, img_tag: stage,  host_port: 8080, node_tag: stage }
+      - { name: dev,   img_tag: dev,    host_port: 8081, node_tag: dev }
   tasks:
-    - name: Copy compose files
+    - name: Copy compose file
       copy:
-        src: "../{{ item.compose }}"
-        dest: "/tmp/{{ item.compose }}"
-      loop: "{{ stacks }}"
+        src: "../docker-compose.yml"
+        dest: "/tmp/docker-compose.yml"
 
     - name: Deploy stack
       community.docker.docker_stack:
         name: "{{ item.name }}"
         state: present
         compose:
-          - "/tmp/{{ item.compose }}"
+          - "/tmp/docker-compose.yml"
       environment:
         BASE_REGISTRY: "{{ base_registry }}"
+        IMG_TAG: "{{ item.img_tag }}"
+        HOST_PORT: "{{ item.host_port }}"
+        NODE_TAG: "{{ item.node_tag }}"
       loop: "{{ stacks }}"
 
 - name: Setup GitHub Actions runner
