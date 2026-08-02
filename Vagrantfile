@@ -63,7 +63,9 @@ Vagrant.configure("2") do |config|
                         "dev-node"   => { "tag_name" => "dev" }
                     }
                     ansible.extra_vars = {
-                        base_registry: ENV['BASE_REGISTRY']
+                        base_registry: ENV['BASE_REGISTRY'],
+                        github_repo:   ENV['GITHUB_REPO'],
+                        github_pat:    ENV['GITHUB_PAT']
                     }
                 end
             end

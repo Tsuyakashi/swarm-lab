@@ -1,0 +1,65 @@
+---
+- name: Check if runner already configured
+  stat:
+    path: /home/vagrant/actions-runner/.runner
+  register: runner_configured
+
+- name: Get latest actions-runner release info
+  uri:
+    url: https://api.github.com/repos/actions/runner/releases/latest
+    return_content: true
+  register: runner_release
+  when: not runner_configured.stat.exists
+
+- name: Create actions-runner directory
+  file:
+    path: /home/vagrant/actions-runner
+    state: directory
+    owner: vagrant
+    group: vagrant
+  when: not runner_configured.stat.exists
+
+- name: Download and extract actions-runner
+  unarchive:
+    src: "https://github.com/actions/runner/releases/download/{{ runner_release.json.tag_name }}/actions-runner-linux-x64-{{ runner_release.json.tag_name | regex_replace('^v', '') }}.tar.gz"
+    dest: /home/vagrant/actions-runner
+    remote_src: true
+    owner: vagrant
+    group: vagrant
+  when: not runner_configured.stat.exists
+
+- name: Get GitHub runner registration token
+  uri:
+    url: "https://api.github.com/repos/{{ github_repo }}/actions/runners/registration-token"
+    method: POST
+    headers:
+      Authorization: "token {{ github_pat }}"
+      Accept: "application/vnd.github.v3+json"
+    status_code: 201
+    return_content: true
+  register: reg_token_response
+  when: not runner_configured.stat.exists
+
+- name: Configure runner
+  become_user: vagrant
+  command: >
+    ./config.sh --url https://github.com/{{ github_repo }}
+    --token {{ reg_token_response.json.token }}
+    --name vagrant-linux
+    --labels linux,self-hosted
+    --unattended --replace
+  args:
+    chdir: /home/vagrant/actions-runner
+  when: not runner_configured.stat.exists
+
+- name: Install runner service
+  command: ./svc.sh install vagrant
+  args:
+    chdir: /home/vagrant/actions-runner
+  when: not runner_configured.stat.exists
+
+- name: Start runner service
+  command: ./svc.sh start
+  args:
+    chdir: /home/vagrant/actions-runner
+  when: not runner_configured.stat.exists
