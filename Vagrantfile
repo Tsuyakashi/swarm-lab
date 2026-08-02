@@ -46,59 +46,27 @@ Vagrant.configure("2") do |config|
                 vb.linked_clone = true
             end
 
-            if name == "prod-node"
-                node.vm.provision "file", source: "docker-compose.yml", destination: "/tmp/docker-compose.yml"
-                node.vm.provision "file", source: "docker-compose.stage.yml", destination: "/tmp/docker-compose.stage.yml"
-                node.vm.provision "file", source: "docker-compose.dev.yml", destination: "/tmp/docker-compose.dev.yml"
-
-                node.vm.provision "configure_prod", type: "shell" do |s|
-                    s.path = "scripts/manager.sh"
-                    s.binary = true
-                    s.env = {
-                        "PROD_IP" => PROD_IP,
-                        "BASE_REGISTRY" => ENV['BASE_REGISTRY']
+            
+            if name == NODES.keys.last
+                node.vm.provision "ansible" do |ansible|
+                    ansible.playbook          = "ansible/site.yml"
+                    ansible.galaxy_role_file  = "ansible/requirements.yml"
+                    ansible.limit             = "all"
+                    ansible.groups = {
+                        "swarm_managers" => ["prod-node"],
+                        "swarm_workers"  => ["stage-node", "dev-node"],
+                        "all:vars" => { "ansible_python_interpreter" => "/usr/bin/python3" }
+                    }
+                    ansible.host_vars = {
+                        "prod-node"  => { "tag_name" => "prod" },
+                        "stage-node" => { "tag_name" => "stage" },
+                        "dev-node"   => { "tag_name" => "dev" }
+                    }
+                    ansible.extra_vars = {
+                        base_registry: ENV['BASE_REGISTRY']
                     }
                 end
-            else
-                node.vm.provision "configure_worker", type: "shell" do |s|
-                    s.path = "scripts/worker.sh"
-                    s.binary = true
-                    s.env = {}
-                end
             end
-        end
-    end
-
-    config.trigger.after :up do |trigger|
-        trigger.ruby do |env, machine|
-            next unless machine.name.to_s == NODES.keys.last  # выполняем один раз, после последней ноды
-    
-            token = nil
-            30.times do
-                out = `vagrant ssh prod-node -c "sudo docker info 2>/dev/null | grep -q 'Swarm: active' && sudo docker swarm join-token -q worker" 2>/dev/null`.strip
-                unless out.empty?
-                    token = out
-                    break
-                end
-                sleep 5
-            end
-            raise "prod swarm not ready after timeout" if token.nil?
-    
-            NODES.each do |name, _cfg|
-                next if name == "prod-node"
-                state = `vagrant status #{name} --machine-readable`.lines.grep(/,state,/).last
-                next unless state&.include?(",running")
-                puts "== joining #{name} to swarm =="
-                system("vagrant ssh #{name} -c \"sudo docker info 2>/dev/null | grep -q 'Swarm: active' || sudo docker swarm join --token #{token} #{PROD_IP}:2377\"")
-            end
-    
-            puts "== deploying stack =="
-            system("vagrant ssh prod-node -c \"sudo docker node update --label-add TAG=prod prod\"")
-            system("vagrant ssh prod-node -c \"sudo docker node update --label-add TAG=stage stage\"")
-            system("vagrant ssh prod-node -c \"sudo docker node update --label-add TAG=dev dev\"")
-            system("vagrant ssh prod-node -c \"export BASE_REGISTRY=#{ENV['BASE_REGISTRY']}; sudo -E docker stack deploy --with-registry-auth -c /tmp/docker-compose.yml prod\"")
-            system("vagrant ssh prod-node -c \"export BASE_REGISTRY=#{ENV['BASE_REGISTRY']}; sudo -E docker stack deploy --with-registry-auth -c /tmp/docker-compose.stage.yml stage\"")
-            system("vagrant ssh prod-node -c \"export BASE_REGISTRY=#{ENV['BASE_REGISTRY']}; sudo -E docker stack deploy --with-registry-auth -c /tmp/docker-compose.dev.yml dev\"")
         end
     end
 end
