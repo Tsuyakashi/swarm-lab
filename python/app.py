@@ -32,7 +32,7 @@ def hello_world():
     
     return f"""
     <html>
-    <head><title>BSUIR DevOps App</title></head>
+    <head><title>Minimal Python App</title></head>
     <body style="font-family:sans-serif; background:#121212; color:#fff; text-align:center; padding-top:50px;">
         <h2>Hello World!</h2>
         <p>Timestamp: <b>{timestamp}</b></p>
