@@ -1,12 +1,18 @@
 package main
 
 import (
+	"embed"
+	"html/template"
 	"log/slog"
 	"net/http"
 	"os"
 	"time"
 )
 
+//go:embed templates/*.html
+var templateFS embed.FS
+
+var tmpl = template.Must(template.ParseFS(templateFS, "templates/*.html"))
 
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -28,8 +34,18 @@ func loggingMiddleware(next http.Handler) http.Handler {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.Write([]byte("Hello, 世界\n"))
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	data := struct {
+		Greeting  string
+		Timestamp string
+	}{
+		Greeting:  "世界",
+		Timestamp: time.Now().Format(time.RFC3339),
+	}
+	if err := tmpl.ExecuteTemplate(w, "index.html", data); err != nil {
+		slog.Error("Failed to render template", "error", err)
+		http.Error(w, "internal server error", http.StatusInternalServerError)
+	}
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
@@ -61,7 +77,7 @@ func main() {
 	wrappedMux := loggingMiddleware(mux)
 
 	slog.Info("Starting production server", "port", "8080")
-	
+
 	server := &http.Server{
 		Addr:         ":8080",
 		Handler:      wrappedMux,
