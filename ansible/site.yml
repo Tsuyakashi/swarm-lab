@@ -69,15 +69,15 @@
   tasks:
     - name: Copy compose file
       copy:
-        src: "../docker-compose.yml"
-        dest: "/tmp/docker-compose.yml"
+        src: "../docker-compose.prod.yml"
+        dest: "/tmp/docker-compose.prod.yml"
 
     - name: Deploy stack
       community.docker.docker_stack:
         name: "{{ item.name }}"
         state: present
         compose:
-          - "/tmp/docker-compose.yml"
+          - "/tmp/docker-compose.prod.yml"
       environment:
         BASE_REGISTRY: "{{ base_registry }}"
         IMG_TAG: "{{ item.img_tag }}"
