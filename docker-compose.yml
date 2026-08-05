@@ -64,7 +64,7 @@ services:
     restart: unless-stopped
     init: true
     healthcheck:
-      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
+      test: [ "CMD", "/app", "-healthcheck" ]
       interval: 10s
       timeout: 3s
       retries: 3
