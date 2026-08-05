@@ -10,6 +10,7 @@ WORKDIR /app
 
 COPY --from=builder /install /usr/local
 COPY app.py .
+COPY templates/ templates/
 
 USER 10001
 
