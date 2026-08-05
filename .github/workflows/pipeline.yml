@@ -142,7 +142,7 @@ jobs:
           image="${{ needs.detect-changes.outputs.image_base }}:${{ matrix.service }}-${{ needs.detect-changes.outputs.tag }}"
           full_svc="${{ needs.detect-changes.outputs.stack }}_${{ steps.svc.outputs.name }}"
           sudo docker pull "$image"
-          sudo docker service update --with-registry-auth --image "$image" "$full_svc"
+          sudo docker service update --with-registry-auth --force --image "$image" "$full_svc"
 
   verify:
     needs: [detect-changes, deploy]
