@@ -1,7 +1,7 @@
 import datetime
 import logging
 import os
-from flask import Flask, request
+from flask import Flask, request, render_template
 
 
 logging.basicConfig(
@@ -22,24 +22,14 @@ def get_cpu_load():
 
 @app.before_request
 def log_request_info():
-    if request.path != '/health':  # чтобы не спамить логами хелсчеков
+    if request.path != '/health':
         app.logger.info(f"HTTP {request.method} {request.path} from {request.remote_addr}")
 
 @app.route('/')
 def hello_world():
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     cpu_load = get_cpu_load()
-    
-    return f"""
-    <html>
-    <head><title>Minimal Python App</title></head>
-    <body style="font-family:sans-serif; background:#121212; color:#fff; text-align:center; padding-top:50px;">
-        <h2>Hello World!</h2>
-        <p>Timestamp: <b>{timestamp}</b></p>
-        <p>System Load (1 min): <b>{cpu_load}</b></p>
-    </body>
-    </html>
-    """
+    return render_template('index.html', timestamp=timestamp, cpu_load=cpu_load)
 
 @app.route('/health')
 def healthcheck():

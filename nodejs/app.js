@@ -1,8 +1,11 @@
 const express = require('express');
 const morgan = require('morgan')
+const path = require('path');
 const app = express();
 const port = process.env.PORT || 8080;
 
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
 app.use(morgan('short', {
     skip: (req, res) => req.url === '/health' || req.url === '/healthcheck'
@@ -15,12 +18,12 @@ const quotes = [
 ];
 
 app.get('/', (req, res) => {
-    res.send('Hello World!');
+    res.render('index');
 });
 
 app.get('/quote', (req, res) => {
     const randomIndex = Math.floor(Math.random() * quotes.length);
-    res.send(quotes[randomIndex]);
+    res.render('quote', { quote: quotes[randomIndex] });
 });
 
 app.get('/health', (req, res) => {
