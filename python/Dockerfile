@@ -16,4 +16,4 @@ USER 10001
 EXPOSE 8080
 ENV PORT=8080
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "4", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:8080", "--workers", "4", "--no-control-socket", "app:app"]
