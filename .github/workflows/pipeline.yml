@@ -116,42 +116,66 @@ jobs:
 
   deploy:
     needs: [detect-changes, build, promote]
-    if: ${{ !failure() && !cancelled() && needs.detect-changes.outputs.promote_only != 'skip' }}
+    if: ${{ !failure() && !cancelled() && needs.detect-changes.outputs.promote_only != 'skip' && needs.detect-changes.outputs.services != '[]' }}
     runs-on: self-hosted
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJSON(needs.detect-changes.outputs.services) }}
     steps:
       - name: Login to GHCR
         run: echo "${{ secrets.GHCR_PAT }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Force rolling update
+      - name: Resolve compose service name
+        id: svc
         run: |
-          sudo docker service ls --filter label=com.docker.stack.namespace=${{ needs.detect-changes.outputs.stack }} --format '{{.Name}}' \
-            | while read -r svc; do
-                current_image=$(sudo docker service inspect "$svc" --format '{{.Spec.TaskTemplate.ContainerSpec.Image}}' | cut -d@ -f1)
-                sudo docker service update --with-registry-auth --image "$current_image" "$svc"
-              done
+          case "${{ matrix.service }}" in
+            nginx)  name=nginx ;;
+            python) name=python-app ;;
+            nodejs) name=nodejs-app ;;
+            go)     name=go-app ;;
+          esac
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      - name: Pull & update service
+        run: |
+          image="${{ needs.detect-changes.outputs.image_base }}:${{ matrix.service }}-${{ needs.detect-changes.outputs.tag }}"
+          full_svc="${{ needs.detect-changes.outputs.stack }}_${{ steps.svc.outputs.name }}"
+          sudo docker pull "$image"
+          sudo docker service update --with-registry-auth --image "$image" "$full_svc"
 
   verify:
     needs: [detect-changes, deploy]
-    if: ${{ !failure() && !cancelled() }}
+    if: ${{ !failure() && !cancelled() && needs.detect-changes.outputs.promote_only != 'skip' && needs.detect-changes.outputs.services != '[]' }}
     runs-on: self-hosted
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJSON(needs.detect-changes.outputs.services) }}
     steps:
-      - name: Wait for services to converge
+      - name: Resolve compose service name
+        id: svc
         run: |
-          stack="${{ needs.detect-changes.outputs.stack }}"
-          services=$(sudo docker service ls --filter label=com.docker.stack.namespace=$stack --format '{{.Name}}')
+          case "${{ matrix.service }}" in
+            nginx)  name=nginx ;;
+            python) name=python-app ;;
+            nodejs) name=nodejs-app ;;
+            go)     name=go-app ;;
+          esac
+          echo "name=$name" >> "$GITHUB_OUTPUT"
 
-          for svc in $services; do
-            echo "Waiting for $svc to stabilize..."
-            for i in $(seq 1 30); do
-              desired=$(sudo docker service inspect "$svc" --format '{{.Spec.Mode.Replicated.Replicas}}')
-              running=$(sudo docker service ls --filter "name=$svc" --format '{{.Replicas}}' | cut -d/ -f1)
-              [ "$running" = "$desired" ] && break
-              sleep 5
-            done
-            [ "$running" = "$desired" ] || { echo "::error::$svc did not converge ($running/$desired)"; exit 1; }
+      - name: Wait for service to converge
+        run: |
+          full_svc="${{ needs.detect-changes.outputs.stack }}_${{ steps.svc.outputs.name }}"
+          for i in $(seq 1 30); do
+            desired=$(sudo docker service inspect "$full_svc" --format '{{.Spec.Mode.Replicated.Replicas}}')
+            running=$(sudo docker service ls --filter "name=$full_svc" --format '{{.Replicas}}' | cut -d/ -f1)
+            [ "$running" = "$desired" ] && break
+            sleep 5
           done
+          [ "$running" = "$desired" ] || { echo "::error::$full_svc did not converge ($running/$desired)"; exit 1; }
 
-      - name: Health-check endpoints
+      - name: Health-check endpoint
         run: |
           case "${{ needs.detect-changes.outputs.stack }}" in
             prod)  port=80 ;;
@@ -159,9 +183,11 @@ jobs:
             dev)   port=8081 ;;
           esac
 
-          for path in go nodejs python; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:${port}/${path}/health")
-            [ "$code" = "200" ] || { echo "::error::${path} health check failed (HTTP $code)"; exit 1; }
-          done
+          if [ "${{ matrix.service }}" = "nginx" ]; then
+            url="http://127.0.0.1:${port}/health"
+          else
+            url="http://127.0.0.1:${port}/${{ matrix.service }}/health"
+          fi
 
-          echo "All health checks passed for ${{ needs.detect-changes.outputs.stack }}"
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$url")
+          [ "$code" = "200" ] || { echo "::error::$url failed (HTTP $code)"; exit 1; }
