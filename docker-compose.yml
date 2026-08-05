@@ -1,0 +1,46 @@
+services:
+
+  # TODO: add tags to download images from gchr.io prod > stage > dev or build
+  nginx:
+    build: ./nginx
+    container_name: nginx-proxy
+    ports:
+      - "8000:80"
+    networks:
+      - web-network
+    restart: unless-stopped
+    depends_on:
+      - go-app
+      - nodejs-app
+      - python-app
+
+  python-app:
+    build: ./python
+    container_name: python-app
+    expose:
+      - "8080"
+    networks:
+      - web-network
+    restart: unless-stopped
+
+  nodejs-app:
+    build: ./nodejs
+    container_name: nodejs-app
+    expose:
+      - "8080"
+    networks:
+      - web-network
+    restart: unless-stopped
+
+  go-app:
+    build: ./go
+    container_name: go-app
+    expose:
+      - "8080"
+    networks:
+      - web-network
+    restart: unless-stopped
+
+networks:
+  web-network:
+    driver: bridge
