@@ -1,60 +1,75 @@
 services:
+  # TODO: add tags to download images from gchr.io prod > stage > dev or build
   nginx:
-    image: ${BASE_REGISTRY}:nginx-${IMG_TAG}
+    build: ./nginx
     container_name: nginx-proxy
     ports:
-      - "${HOST_PORT}:80"
+      - "${HOST_PORT:-8000}:80"
     networks:
       - web-network
     restart: unless-stopped
     depends_on:
-      - go-app
-      - nodejs-app
-      - python-app
-    deploy:
-      placement:
-        constraints:
-          - "node.labels.TAG==${NODE_TAG}"
+      go-app:
+        condition: service_healthy
+      nodejs-app:
+        condition: service_healthy
+      python-app:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://127.0.0.1/health" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
 
   python-app:
-    image: ${BASE_REGISTRY}:python-${IMG_TAG}
+    build: ./python
     container_name: python-app
     expose:
       - "8080"
     networks:
       - web-network
     restart: unless-stopped
-    deploy:
-      placement:
-        constraints:
-          - "node.labels.TAG==${NODE_TAG}"
+    init: true
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8080/health').status==200 else 1)" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
 
   nodejs-app:
-    image: ${BASE_REGISTRY}:nodejs-${IMG_TAG}
+    build: ./nodejs
     container_name: nodejs-app
     expose:
       - "8080"
     networks:
       - web-network
     restart: unless-stopped
-    deploy:
-      placement:
-        constraints:
-          - "node.labels.TAG==${NODE_TAG}"
+    init: true
+    healthcheck:
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/health" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
 
   go-app:
-    image: ${BASE_REGISTRY}:go-${IMG_TAG}
+    build: ./go
     container_name: go-app
     expose:
       - "8080"
     networks:
       - web-network
     restart: unless-stopped
-    deploy:
-      placement:
-        constraints:
-          - "node.labels.TAG==${NODE_TAG}"
+    init: true
+    healthcheck:
+      test: [ "CMD", "/app", "-healthcheck" ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
 
 networks:
   web-network:
-    driver: overlay
+    driver: bridge

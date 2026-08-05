@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <title>API Gateway</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            background: #121214;
+            color: #e1e1e6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .card {
+            background: #202024;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+
+        h1 {
+            color: #04d361;
+            margin-top: 0;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            display: flex;
+            gap: 30px;
+            /* Увеличили отступ между сервисами для читаемости */
+            justify-content: center;
+        }
+
+        /* Главное изменение: делаем пункты списка вертикальными колонками */
+        li {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            /* Отступ между названием сервиса и его health-ссылкой */
+        }
+
+        a {
+            color: #8257e5;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        /* Дополнительно: можно сделать ссылку health чуть меньше или другого цвета */
+        .health-link {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <h1>Hello world!</h1>
+        <p>Available services:</p>
+        <ul>
+            <li>
+                <a href="/go/">Go App</a>
+                <a href="/go/health" class="health-link">health</a>
+            </li>
+            <li>
+                <a href="/nodejs/">Node.js App</a>
+                <!-- Ошибка с лишним тегом </li> исправлена здесь -->
+                <a href="/nodejs/health" class="health-link">health</a>
+            </li>
+            <li>
+                <a href="/python/">Python App</a>
+                <a href="/python/health" class="health-link">health</a>
+            </li>
+        </ul>
+    </div>
+</body>
+
+</html>
