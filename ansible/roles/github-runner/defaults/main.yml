@@ -1,0 +1,4 @@
+---
+runner_dir: "/home/{{ ansible_user }}/actions-runner"
+runner_user: "{{ ansible_user }}"
+runner_name: "{{ inventory_hostname }}"
