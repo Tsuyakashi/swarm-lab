@@ -7,7 +7,7 @@
 
 - name: Check if runner already configured
   stat:
-    path: /home/vagrant/actions-runner/.runner
+    path: "{{ runner_dir }}/.runner"
   register: runner_configured
 
 - name: Get latest actions-runner release info
@@ -19,19 +19,19 @@
 
 - name: Create actions-runner directory
   file:
-    path: /home/vagrant/actions-runner
+    path: "{{ runner_dir }}"
     state: directory
-    owner: vagrant
-    group: vagrant
+    owner: "{{ runner_user }}"
+    group: "{{ runner_user }}"
   when: not runner_configured.stat.exists
 
 - name: Download and extract actions-runner
   unarchive:
     src: "https://github.com/actions/runner/releases/download/{{ runner_release.json.tag_name }}/actions-runner-linux-x64-{{ runner_release.json.tag_name | regex_replace('^v', '') }}.tar.gz"
-    dest: /home/vagrant/actions-runner
+    dest: "{{ runner_dir }}"
     remote_src: true
-    owner: vagrant
-    group: vagrant
+    owner: "{{ runner_user }}"
+    group: "{{ runner_user }}"
   when: not runner_configured.stat.exists
 
 - name: Get GitHub runner registration token
@@ -48,26 +48,26 @@
   when: not runner_configured.stat.exists
 
 - name: Configure runner
-  become_user: vagrant
+  become_user: "{{ runner_user }}"
   command: >
     ./config.sh --url https://github.com/{{ github_repo }}
     --token {{ reg_token_response.json.token }}
-    --name vagrant-linux
+    --name "{{ runner_user }}"
     --labels linux,self-hosted
     --unattended --replace
   args:
-    chdir: /home/vagrant/actions-runner
+    chdir: "{{ runner_dir }}"
   no_log: true
   when: not runner_configured.stat.exists
 
 - name: Install runner service
-  command: ./svc.sh install vagrant
+  command: "./svc.sh install {{ runner_user }}"
   args:
-    chdir: /home/vagrant/actions-runner
+    chdir: "{{ runner_dir }}"
   when: not runner_configured.stat.exists
 
 - name: Start runner service
   command: ./svc.sh start
   args:
-    chdir: /home/vagrant/actions-runner
+    chdir: "{{ runner_dir }}"
   when: not runner_configured.stat.exists
