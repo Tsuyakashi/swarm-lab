@@ -11,7 +11,7 @@ services:
       test: [ "CMD", "wget", "-qO-", "http://127.0.0.1/health" ]
       interval: 10s
       timeout: 3s
-      retries: 3
+      retries: 5
       start_period: 5s
     deploy:
       placement:
